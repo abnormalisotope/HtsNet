@@ -219,7 +219,7 @@ namespace HtsNet
                     if (Exclusions.Contains(stream.Type))
                         continue;
 
-                    length = (stream.Pdf.States.Length * 4) + (stream.Pdf.Data.Length * 4);
+                    length = stream.Pdf.Count();
                     position = $"{offset}-{offset + length - 1}";
                     offset += length;
                     positions.Add($"{STREAM_PDF}[{stream.Type}]", string.Join(",", position));
@@ -493,7 +493,7 @@ namespace HtsNet
                 {
                     case DURATION_PDF:
                         stream = Streams.FirstOrDefault(x => x.Type == HtsStreamType.DUR);
-                        stream.Pdf.Read(dataSection.ReadFromPosition(field[1]), 1, 5, 1);
+                        stream.Pdf.Read(dataSection.ReadFromPosition(field[1]), 1, 1, 5);
                         break;
                     case DURATION_TREE:
                         stream = Streams.FirstOrDefault(x => x.Type == HtsStreamType.DUR);
@@ -535,21 +535,21 @@ namespace HtsNet
                         }
                         break;
                     case STREAM_PDF:
-                        stream.Pdf.Read(dataSection.ReadFromPosition(field[1]), NumStates, stream.Pdf.VectorLength, stream.NumWindows);
+                        stream.Pdf.Read(dataSection.ReadFromPosition(field[1]), NumStates, stream.NumWindows, stream.Pdf.VectorLength);
                         break;
                     case STREAM_TREE:
                         var binTree = dataSection.ReadFromPosition(field[1]);
                         stream.Tree = Encoding.ASCII.GetString(binTree);
                         break;
                     case GV_PDF:
-                        stream.GvPdf.Read(dataSection.ReadFromPosition(field[1]), 1, stream.Pdf.VectorLength, 1);
+                        stream.GvPdf.Read(dataSection.ReadFromPosition(field[1]), 1, 1, stream.Pdf.VectorLength);
                         break;
                     case GV_TREE:
                         var binGvTree = dataSection.ReadFromPosition(field[1]);
                         stream.GvTree = Encoding.ASCII.GetString(binGvTree);
                         break;
                     case AVAILABLE_RANGE_PDF:
-                        stream.AvailableRangePdf.Read(dataSection.ReadFromPosition(field[1]), 1, stream.Pdf.VectorLength, 1);
+                        stream.AvailableRangePdf.Read(dataSection.ReadFromPosition(field[1]), 1, 1, stream.Pdf.VectorLength);
                         break;
                     default:
                         var kvp = line.Split(new char[] { ':' }, 2);

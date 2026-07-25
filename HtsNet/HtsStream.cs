@@ -86,6 +86,9 @@ namespace HtsNet
                     return;
                 }
 
+                if (Options.Count > 0)
+                    Options.Clear();
+
                 foreach (var pair in value.Split(','))
                 {
                     var kvp = pair.Split('=');

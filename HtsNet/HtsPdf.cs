@@ -1,4 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace HtsNet
 {
@@ -10,13 +13,61 @@ namespace HtsNet
     }
     public class HtsPdf
     {
-        public int VectorLength { get; set; }
+        public int VectorLength { get; set; } = 0;
         public bool IsMsd { get; set; } = false;
-        public int[] States { get; set; }
-        public float[] Data { get; set; }
-        public float[][][] Means { get; set; }
-        public float[][][] Variances { get; set; }
-        public float[][] MSD { get; set; }
+        public int[] States { get; set; } = new int[0];
+        public float[] Data { get; set; } = new float[0];
+        public float[][][] Means { get; set; } = new float[0][][];
+        public float[][][] Variances { get; set; } = new float[0][][];
+        public float[][] MSD { get; set; } = new float[0][];
+        public void ResizePDF(int newDimSize, int numWindows)
+        {
+            for (int i = 0; i < States.Length; i++)
+            {
+                int diff = 0;
+                for (int j = 0; j < States[i]; j++)
+                {
+                    var oldMean = Means[i][j];
+                    var oldDimSize = oldMean.Length / numWindows;
+                    var length = oldDimSize < newDimSize ? oldDimSize : newDimSize;
+                    var newMeans = new List<float[]>();
+                    for (int k = 0; k < numWindows; k++)
+                    {
+                        var newMeanTemp = new float[newDimSize];
+                        Array.Copy(oldMean, oldDimSize * k, newMeanTemp, 0, length);
+                        newMeans.Add(newMeanTemp);
+                    }
+                    var newMean = newMeans.SelectMany(x => x).ToArray();
+                    Means[i][j] = newMean;
+                    diff += newMean.Length - oldMean.Length;
+
+                    var oldVar = Variances[i][j];
+                    oldDimSize = oldVar.Length / numWindows;
+                    var newVars = new List<float[]>();
+                    for (int k = 0; k < numWindows; k++)
+                    {
+                        var newVarTemp = new float[newDimSize];
+                        Array.Copy(oldVar, newVarTemp, oldDimSize);
+                        newVars.Add(newVarTemp);
+                    }
+                    var newVar = newVars.SelectMany(x => x).ToArray();
+                    Variances[i][j] = newVar;
+                    diff += newVar.Length - oldVar.Length;
+
+                    if (IsMsd)
+                    {
+                        var oldMsd = MSD[i];
+                        oldDimSize = oldMsd.Length / numWindows;
+                        var newMsd = new float[newDimSize];
+                        Array.Copy(oldMsd, newMsd, oldDimSize);
+                        MSD[i] = newMsd;
+                        diff += newMsd.Length - oldMsd.Length;
+                    }   
+                }
+                //States[i] += diff;
+            }
+            VectorLength = newDimSize;
+        }
         public HtsSinglePdf GetSinglePdf(int state, int index)
         {
             float[] means = Means[state][index];
@@ -94,6 +145,27 @@ namespace HtsNet
                     }
                 }
             }
+        }
+        public int Count()
+        {
+            int num = 0;
+            num += States.Length * 4;
+            for (int i = 0; i < States.Length; i++)
+            {
+                num += (Means[i][0].Length * 4) * States[i];
+            }
+            for (int i = 0; i < States.Length; i++)
+            {
+                num += (Variances[i][0].Length * 4) * States[i];
+            }
+            if (IsMsd)
+            {
+                for (int i = 0; i < States.Length; i++)
+                {
+                    num += MSD[i].Length * 4;
+                }
+            }
+            return num;
         }
         public void Write(BinaryWriter bw)
         {

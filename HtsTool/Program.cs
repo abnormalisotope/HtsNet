@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
 using System.Text;
 using HtsNet;
 
@@ -8,12 +8,47 @@ namespace HtsTool
     {
         static void Main(string[] args)
         {
-            var folder = "C:\\Users\\joaop\\Downloads\\hts\\htsvoice";
-            var name = "nitech_jp_song070_f001";
-            var model = new HtsVoice($"{folder}\\{name}.htsvoice");
-            var mgc = model.Streams.Find(x => x.Type == HtsStreamType.MGC);
-            var parameters = ExportParameters(mgc.Pdf.Means, mgc.Pdf.Variances, mgc.Pdf.MSD, mgc.NumWindows);
-            File.WriteAllText(Path.Combine(folder, name + $"_{mgc.Type.ToString().ToLower()}_pdf.txt"), parameters);
+            var mikuPath = "C:\\Users\\User\\Downloads\\Synth\\HTS\\htsvoice\\dl\\miku-type-d.htsvoice";
+            var mikuModel = new HtsVoice(mikuPath);
+            var mikuDur = mikuModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
+            var mikuMcp = mikuModel.Streams.Find(x => x.Type == HtsStreamType.MCP);
+
+            var sasaraPath = "C:\\Users\\User\\Downloads\\Synth\\HTS\\htsvoice\\f801_normal_svss.htsvoice";
+            var sasaraModel = new HtsVoice(sasaraPath);
+            var sasaraDur = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
+            var sasaraRc = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.RC);
+            var sasaraRs = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.RS);
+            var sasaraMgc = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.MGC);
+            var sasaraLf0 = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.LF0);
+            var sasaraBap = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.BAP);
+            var sasaraVib = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.VIB);
+
+            mikuMcp.Type = HtsStreamType.MGC;
+            mikuMcp.Pdf.ResizePDF(sasaraMgc.Pdf.VectorLength, mikuMcp.NumWindows);
+            mikuMcp.Option = "GAMMA=0,LN_GAIN=1,ALPHA=0.55";
+            mikuMcp.GvPdf = new HtsPdf();
+            mikuMcp.GvTree = string.Empty;
+            mikuMcp.UseGv = false;
+            mikuMcp.AvailableRangePdf = sasaraMgc.AvailableRangePdf;
+            mikuMcp.UseAvailableRange = true;
+
+            var newStreams = new List<HtsStream>()
+            {
+                mikuDur,
+                sasaraRc,
+                sasaraRs,
+                mikuMcp,
+                sasaraLf0,
+                sasaraBap,
+                sasaraVib
+            };
+
+            mikuModel.FullContextFormat = "HTS_SVSS";
+            mikuModel.Comment = "ly TSVOICE miku-type-d X sasara_normal ver20141119_mod";
+            mikuModel.Streams = newStreams;
+            mikuModel.StreamExtraMetadata = sasaraModel.StreamExtraMetadata;
+
+            mikuModel.SaveToPath(mikuPath.Replace(".htsvoice", "-50d-cevio.htsvoice"));
         }
         public static string ExportParameters(float[][][] mean, float[][][] variance, float[][] msd, int numWindows)
         {
