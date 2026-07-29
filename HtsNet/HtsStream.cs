@@ -21,13 +21,17 @@ namespace HtsNet
         /// </summary>
         RS,
         /// <summary>
-        ///	Mel CePstral
-        /// </summary>
-        MCP,
-        /// <summary>
         ///	Mel Generalized Cepstral
         /// </summary>
         MGC,
+        /// <summary>
+        ///	Mel CePstral, MGC with Gamma = 0
+        /// </summary>
+        MCP,
+        /// <summary>
+        ///	Line Spectral Pairs?, MGC with Gamma != 0
+        /// </summary>
+        LSP,
         /// <summary>
         /// Log F0
         /// </summary>

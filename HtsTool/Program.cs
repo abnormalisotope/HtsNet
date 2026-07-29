@@ -8,73 +8,103 @@ namespace HtsTool
     {
         static void Main(string[] args)
         {
-            var mikuPath = "C:\\Users\\User\\Downloads\\Synth\\HTS\\htsvoice\\dl\\miku-type-d.htsvoice";
-            var mikuModel = new HtsVoice(mikuPath);
-            var mikuDur = mikuModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
-            var mikuMcp = mikuModel.Streams.Find(x => x.Type == HtsStreamType.MCP);
+            var modelsFolder = "C:\\Users\\User\\Downloads\\Synth\\HTS\\htsvoice";
 
-            var sasaraPath = "C:\\Users\\User\\Downloads\\Synth\\HTS\\htsvoice\\f801_normal_svss.htsvoice";
-            var sasaraModel = new HtsVoice(sasaraPath);
-            var sasaraDur = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
-            var sasaraRc = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.RC);
-            var sasaraRs = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.RS);
-            var sasaraMgc = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.MGC);
-            var sasaraLf0 = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.LF0);
-            var sasaraBap = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.BAP);
-            var sasaraVib = sasaraModel.Streams.Find(x => x.Type == HtsStreamType.VIB);
+            var genericName = "nitech_jp_atr503_m001";
+            var genericPath = $"{modelsFolder}\\{genericName}.htsvoice";
+            var genericModel = new HtsVoice(genericPath);
+            var genericDur = genericModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
+            var genericMcp = genericModel.Streams.Find(x => x.Type == HtsStreamType.MCP);
+            var genericLf0 = genericModel.Streams.Find(x => x.Type == HtsStreamType.LF0);
+            //can be skipped altogether
+            var genericLpf = genericModel.Streams.Find(x => x.Type == HtsStreamType.LPF);
 
-            mikuMcp.Type = HtsStreamType.MGC;
-            mikuMcp.Pdf.ResizePDF(sasaraMgc.Pdf.VectorLength, mikuMcp.NumWindows);
-            mikuMcp.Option = "GAMMA=0,LN_GAIN=1,ALPHA=0.55";
-            mikuMcp.GvPdf = new HtsPdf();
-            mikuMcp.GvTree = string.Empty;
-            mikuMcp.UseGv = false;
-            mikuMcp.AvailableRangePdf = sasaraMgc.AvailableRangePdf;
-            mikuMcp.UseAvailableRange = true;
+            var proprietaryName = "f801_normal_tts";
+            var proprietaryPath = $"{modelsFolder}\\{proprietaryName}.htsvoice";
+            var proprietaryModel = new HtsVoice(proprietaryPath);
+            var proprietaryDur = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.DUR);
+            var proprietaryMgc = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.MGC);
+            var proprietaryLf0 = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.LF0);
+            var proprietaryBap = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.BAP);
+            //talk only
+            var proprietaryPDur = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.PDUR);
+            //song only
+            var proprietaryRc = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.RC);
+            var proprietaryRs = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.RS);
+            var proprietaryVib = proprietaryModel.Streams.Find(x => x.Type == HtsStreamType.VIB);
 
-            var newStreams = new List<HtsStream>()
+            //resizing mgc and cleaning it up for proprietary editor
+            //note: no conversions are being done
+            genericMcp.Type = HtsStreamType.MGC;
+            genericMcp.Pdf.ResizePDF(proprietaryMgc.Pdf.VectorLength, genericMcp.NumWindows);
+            genericMcp.Option = proprietaryMgc.Option;
+            genericMcp.GvPdf = new HtsPdf();
+            genericMcp.GvTree = string.Empty;
+            genericMcp.UseGv = false;
+            genericMcp.AvailableRangePdf = proprietaryMgc.AvailableRangePdf;
+            genericMcp.UseAvailableRange = true;
+
+            var newStreams = new List<HtsStream>();
+            if (proprietaryName.Contains("tts"))
             {
-                mikuDur,
-                sasaraRc,
-                sasaraRs,
-                mikuMcp,
-                sasaraLf0,
-                sasaraBap,
-                sasaraVib
-            };
+                //you may use HTS_TTS for other languages
+                genericModel.FullContextFormat = "HTS_TTS_JPN";
+                newStreams.Add(genericDur);
+                newStreams.Add(proprietaryPDur);
+                newStreams.Add(genericMcp);
+                newStreams.Add(genericLf0);
+                newStreams.Add(proprietaryBap);
+            }
+            else
+            {
+                //for both jpn and eng
+                genericModel.FullContextFormat = "HTS_SVSS";
+                //for more accurate timing, may deteriorate quality
+                //newStreams.Add(sasaraDur);
+                newStreams.Add(genericDur);
+                newStreams.Add(proprietaryRc);
+                newStreams.Add(proprietaryRs);
+                newStreams.Add(genericMcp);
+                newStreams.Add(proprietaryLf0);
+                newStreams.Add(proprietaryBap);
+                newStreams.Add(proprietaryVib);
+            }
 
-            mikuModel.FullContextFormat = "HTS_SVSS";
-            mikuModel.Comment = "ly TSVOICE miku-type-d X sasara_normal ver20141119_mod";
-            mikuModel.Streams = newStreams;
-            mikuModel.StreamExtraMetadata = sasaraModel.StreamExtraMetadata;
+            genericModel.Comment = $"ly TSVOICE {genericName} X {proprietaryName}";
+            genericModel.Streams = newStreams;
+            genericModel.StreamExtraMetadata = proprietaryModel.StreamExtraMetadata;
 
-            mikuModel.SaveToPath(mikuPath.Replace(".htsvoice", "-50d-cevio.htsvoice"));
+            genericModel.SaveToPath(genericPath.Replace(".htsvoice", "-50d-p.htsvoice"));
+
+            //please note hybrid models only work on <=6.0
+            //while talk models can be directly imported into >=6.1
+            //song models may require some modification in the questions
         }
-        public static string ExportParameters(float[][][] mean, float[][][] variance, float[][] msd, int numWindows)
+        public static string ExportParameters(HtsPdf pdf, int numWindows)
         {
             numWindows = numWindows == 0 ? 1 : numWindows;
             var sb = new StringBuilder();
 
-            sb.AppendLine($"Number of States: {mean.Length}");
-            for (int i = 0; i < mean.Length; i++)
+            sb.AppendLine($"Number of States: {pdf.Means.Length}");
+            for (int i = 0; i < pdf.Means.Length; i++)
             {
                 sb.AppendLine($"State {i + 2}");
-                sb.AppendLine($"    Number of PDFs: {mean[i].Length}");
-                for (int j = 0; j < mean[i].Length; j++)
+                sb.AppendLine($"    Number of PDFs: {pdf.Means[i].Length}");
+                for (int j = 0; j < pdf.Means[i].Length; j++)
                 {
                     sb.AppendLine($"    PDF {j + 1}");
-                    sb.AppendLine($"        Vector Length: {mean[i][j].Length / numWindows}");
-                    for (int k = 0; k < mean[i][j].Length; k++)
+                    sb.AppendLine($"        Vector Length: {pdf.Means[i][j].Length / numWindows}");
+                    for (int k = 0; k < pdf.Means[i][j].Length; k++)
                     {
-                        sb.AppendLine($"        Mean {mean[i][j][k]}");
+                        sb.AppendLine($"        Mean {pdf.Means[i][j][k]}");
                     }
-                    for (int k = 0; k < variance[i][j].Length; k++)
+                    for (int k = 0; k < pdf.Variances[i][j].Length; k++)
                     {
-                        sb.AppendLine($"        Variance {variance[i][j][k]}");
+                        sb.AppendLine($"        Variance {pdf.Variances[i][j][k]}");
                     }
-                    if (msd != null)
+                    if (pdf.IsMsd)
                     {
-                        sb.AppendLine($"        MSD {msd[i][j]}");
+                        sb.AppendLine($"        MSD {pdf.MSD[i][j]}");
                     }
                 }
             }
