@@ -60,7 +60,7 @@ namespace HtsTool
                 //for both jpn and eng
                 genericModel.FullContextFormat = "HTS_SVSS";
                 //for more accurate timing, may deteriorate quality
-                //newStreams.Add(sasaraDur);
+                //newStreams.Add(proprietaryDur);
                 newStreams.Add(genericDur);
                 newStreams.Add(proprietaryRc);
                 newStreams.Add(proprietaryRs);
